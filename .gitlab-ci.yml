@@ -1,0 +1,42 @@
+stages:
+  - build
+  - test
+
+variables:
+  BUILD_DIR: build
+  CONFIGURATION: Release
+
+before_script:
+  - apt-get update -y
+  - apt-get install -y cmake g++ git libgtest-dev
+  # Build GoogleTest
+  - cd /usr/src/gtest && cmake . && make && cp *.a /usr/lib
+  - cd $CI_PROJECT_DIR
+
+build:
+  stage: build
+  script:
+    - rm -rf $BUILD_DIR
+    - mkdir $BUILD_DIR
+    - cd $BUILD_DIR
+    - cmake .. -DCMAKE_BUILD_TYPE=$CONFIGURATION
+    - cmake --build .
+  artifacts:
+    paths:
+      - $BUILD_DIR
+    expire_in: 1 week
+
+test:
+  stage: test
+  script:
+    - cd $BUILD_DIR
+    - ./test_calculator --gtest_output=xml:test-results.xml
+  artifacts:
+    when: always
+    reports:
+      junit: $BUILD_DIR/test-results.xml
+    paths:
+      - $BUILD_DIR/test-results.xml
+      - $BUILD_DIR/test_calculator
+  dependencies:
+    - build
