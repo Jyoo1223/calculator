@@ -42,9 +42,10 @@ jobs:
             ls -l
             ./test_calculator --gtest_output=xml:test_calculator_results.xml
       - store_test_results:
-          path: ./test_calculator_results.xml
+          path: .
+          # CircleCI expects a directory for test results, so point to current directory with your xml inside
       - store_artifacts:
-          path: ./test_calculator_results.xml
+          path: test_calculator_results.xml
 
 workflows:
   build_and_test:
