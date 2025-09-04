@@ -14,31 +14,37 @@ jobs:
             cd /usr/src/gtest
             sudo cmake .
             sudo make
-            sudo cp *.a /usr/lib || echo "No .a files found, skipping"
-            cd $CIRCLE_WORKING_DIRECTORY
+            sudo cp libgtest.a libgtest_main.a /usr/lib || echo "No .a files found, skipping"
       - run:
           name: Build project
           command: |
             rm -rf build
             mkdir build
             cd build
-            cmake -DCMAKE_BUILD_TYPE=Release ..
+            cmake .. -DCMAKE_BUILD_TYPE=Release
             cmake --build .
+            cp test_calculator ../    # Copy test executable to project root
+      - persist_to_workspace:
+          root: .
+          paths:
+            - test_calculator
+            - build
 
   test:
     docker:
       - image: cimg/base:stable
     steps:
-      - checkout
+      - attach_workspace:
+          at: .
       - run:
           name: Run tests
           command: |
-            cd build
-            ./test_calculator --gtest_output=xml:test_results.xml
-      - store_artifacts:
-          path: build/test_results.xml
+            ls -l
+            ./test_calculator --gtest_output=xml:test_calculator_results.xml
       - store_test_results:
-          path: build/test_results.xml
+          path: ./test_calculator_results.xml
+      - store_artifacts:
+          path: ./test_calculator_results.xml
 
 workflows:
   build_and_test:
