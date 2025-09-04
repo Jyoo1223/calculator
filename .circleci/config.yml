@@ -10,14 +10,19 @@ jobs:
           name: Install dependencies
           command: |
             sudo apt-get update
-            sudo apt-get install -y libgtest-dev cmake build-essential
-            cd /usr/src/gtest && sudo cmake . && sudo make && sudo cp *.a /usr/lib || echo "skip"
+            sudo apt-get install -y cmake libgtest-dev build-essential
+            cd /usr/src/gtest
+            sudo cmake .
+            sudo make
+            sudo cp *.a /usr/lib || echo "No .a files found, skipping"
+            cd $CIRCLE_WORKING_DIRECTORY
       - run:
-          name: Build calculator
+          name: Build project
           command: |
             rm -rf build
-            mkdir build && cd build
-            cmake .. -DCMAKE_BUILD_TYPE=Release
+            mkdir build
+            cd build
+            cmake -DCMAKE_BUILD_TYPE=Release ..
             cmake --build .
 
   test:
@@ -26,10 +31,14 @@ jobs:
     steps:
       - checkout
       - run:
-          name: Run calculator tests
+          name: Run tests
           command: |
             cd build
-            ctest --output-on-failure
+            ./test_calculator --gtest_output=xml:test_results.xml
+      - store_artifacts:
+          path: build/test_results.xml
+      - store_test_results:
+          path: build/test_results.xml
 
 workflows:
   build_and_test:
