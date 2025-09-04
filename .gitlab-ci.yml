@@ -1,7 +1,6 @@
 stages:
   - build
   - test
-  - deploy
 
 variables:
   BUILD_DIR: "build"
@@ -9,6 +8,7 @@ variables:
 
 before_script:
   - apt-get update && apt-get install -y cmake libgtest-dev build-essential
+  # Build GoogleTest libraries (required because libgtest-dev only installs sources)
   - cd /usr/src/gtest
   - cmake .
   - make
@@ -32,27 +32,14 @@ test:
   stage: test
   script:
     - cd $BUILD_DIR
-    - ctest --output-on-failure  # runs tests defined in CMake (if using CTest)
+    # Run test executable with GoogleTest XML output
+    - ./test_calculator --gtest_output=xml:test_results.xml
   dependencies:
     - build
   artifacts:
     when: always
     reports:
-      junit: $BUILD_DIR/test_results.xml  # if you generate junit xml from tests
-    expire_in: 1 hour
-
-deploy:
-  stage: deploy
-  script:
-    - echo "Deploying calculator..."
-    - mkdir -p deploy_output
-    - cp $BUILD_DIR/calculator deploy_output/ || echo "calculator binary not found"
-    - cp $BUILD_DIR/test_calculator deploy_output/ || echo "test_calculator binary not found"
-    - ls deploy_output
-  dependencies:
-    - build
-  artifacts:
+      junit: $BUILD_DIR/test_results.xml
     paths:
-      - deploy_output
+      - $BUILD_DIR/test_results.xml
     expire_in: 1 hour
-
