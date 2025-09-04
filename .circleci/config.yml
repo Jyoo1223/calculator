@@ -1,27 +1,55 @@
 version: 2.1
 
 jobs:
-  build_and_test:
+  build:
     docker:
-      - image: circleci/gcc:latest
+      - image: circleci/buildpack-deps:bullseye
     steps:
       - checkout
       - run:
           name: Install dependencies
           command: |
-            sudo apt-get update
-            sudo apt-get install -y cmake libgtest-dev build-essential
-            cd /usr/src/gtest && sudo cmake . && sudo make && sudo cp *.a /usr/lib || true
+            sudo apt-get update && sudo apt-get install -y cmake libgtest-dev build-essential
+            cd /usr/src/gtest && sudo cmake . && sudo make && sudo cp *.a /usr/lib || echo "skip"
       - run:
-          name: Build and Test
+          name: Build project
           command: |
-            mkdir -p build
-            cd build
-            cmake ..
+            rm -rf build
+            mkdir build && cd build
+            cmake .. -DCMAKE_BUILD_TYPE=Release
             cmake --build .
+
+  test:
+    docker:
+      - image: circleci/buildpack-deps:bullseye
+    steps:
+      - checkout
+      - run:
+          name: Run tests
+          command: |
+            cd build
             ctest --output-on-failure
 
+  deploy:
+    docker:
+      - image: circleci/buildpack-deps:bullseye
+    steps:
+      - checkout
+      - run:
+          name: Deploy binaries
+          command: |
+            mkdir -p deploy_output
+            cp build/calculator deploy_output/ || echo "calculator not found"
+            cp build/test_calculator deploy_output/ || echo "test_calculator not found"
+            ls deploy_output
+
 workflows:
-  build_and_test:
+  build_test_deploy:
     jobs:
-      - build_and_test
+      - build
+      - test:
+          requires:
+            - build
+      - deploy:
+          requires:
+            - build
