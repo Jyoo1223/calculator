@@ -3,16 +3,17 @@ version: 2.1
 jobs:
   build:
     docker:
-      - image: circleci/buildpack-deps:bullseye
+      - image: cimg/base:stable
     steps:
       - checkout
       - run:
           name: Install dependencies
           command: |
-            sudo apt-get update && sudo apt-get install -y cmake libgtest-dev build-essential
+            sudo apt-get update
+            sudo apt-get install -y libgtest-dev cmake build-essential
             cd /usr/src/gtest && sudo cmake . && sudo make && sudo cp *.a /usr/lib || echo "skip"
       - run:
-          name: Build project
+          name: Build calculator
           command: |
             rm -rf build
             mkdir build && cd build
@@ -21,35 +22,19 @@ jobs:
 
   test:
     docker:
-      - image: circleci/buildpack-deps:bullseye
+      - image: cimg/base:stable
     steps:
       - checkout
       - run:
-          name: Run tests
+          name: Run calculator tests
           command: |
             cd build
             ctest --output-on-failure
 
-  deploy:
-    docker:
-      - image: circleci/buildpack-deps:bullseye
-    steps:
-      - checkout
-      - run:
-          name: Deploy binaries
-          command: |
-            mkdir -p deploy_output
-            cp build/calculator deploy_output/ || echo "calculator not found"
-            cp build/test_calculator deploy_output/ || echo "test_calculator not found"
-            ls deploy_output
-
 workflows:
-  build_test_deploy:
+  build_and_test:
     jobs:
       - build
       - test:
-          requires:
-            - build
-      - deploy:
           requires:
             - build
