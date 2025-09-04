@@ -43,3 +43,4 @@ test:
     paths:
       - $BUILD_DIR/test_results.xml
     expire_in: 1 hour
+
